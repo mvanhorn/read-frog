@@ -1,7 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai"
-import { configFieldsAtomMap } from "@/utils/atoms/config"
-import { BUILT_IN_DICTIONARY_ACTION_ID } from "@/utils/constants/custom-action"
-import { findSelectionToolbarAction } from "@/utils/custom-actions"
+import { configAtom } from "@/utils/atoms/config"
+import { resolveWordLookupAction } from "@/utils/custom-actions"
 import { cn } from "@/utils/styles/utils"
 import { displaySubtitleAtom } from "../atoms"
 import { lookUpAtom, subtitleTokensAtom, wordLookupAtom } from "./atoms"
@@ -10,11 +9,10 @@ export function SubtitleWordTokens() {
   const cue = useAtomValue(displaySubtitleAtom)
   const tokens = useAtomValue(subtitleTokensAtom)
   const lookup = useAtomValue(wordLookupAtom)
-  const selectionToolbar = useAtomValue(configFieldsAtomMap.selectionToolbar)
+  const config = useAtomValue(configAtom)
   const lookUp = useSetAtom(lookUpAtom)
-  const dictionary = findSelectionToolbarAction(selectionToolbar, BUILT_IN_DICTIONARY_ACTION_ID)
 
-  if (!dictionary || dictionary.enabled === false) {
+  if (resolveWordLookupAction(config).enabled === false) {
     return cue?.text ?? ""
   }
 

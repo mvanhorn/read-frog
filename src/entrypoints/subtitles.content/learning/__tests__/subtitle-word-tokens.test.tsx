@@ -3,7 +3,7 @@ import { fireEvent, render } from "@testing-library/react"
 import { Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { customActionRequestAtom } from "@/components/custom-action/atoms"
-import { configFieldsAtomMap } from "@/utils/atoms/config"
+import { configAtom } from "@/utils/atoms/config"
 import { DEFAULT_CONFIG } from "@/utils/constants/config"
 import { currentTimeMsAtom, sourceTrackAtom, subtitlesStore } from "../../atoms"
 import { lookUpAtom, wordLookupAtom } from "../atoms"
@@ -12,9 +12,7 @@ import { SubtitleWordTokens } from "../subtitle-word-tokens"
 vi.mock("@/utils/atoms/config", async () => {
   const { atom } = await import("jotai")
   const constants = await import("@/utils/constants/config")
-  return {
-    configFieldsAtomMap: { selectionToolbar: atom(constants.DEFAULT_CONFIG.selectionToolbar) },
-  }
+  return { configAtom: atom(constants.DEFAULT_CONFIG) }
 })
 
 function renderLine(text = "You can see the blood run.") {
@@ -28,12 +26,19 @@ function renderLine(text = "You can see the blood run.") {
   return [...container.querySelectorAll<HTMLElement>('[data-slot="subtitle-word"]')]
 }
 
+function pickAction(wordLookupActionId: string) {
+  subtitlesStore.set(configAtom, {
+    ...DEFAULT_CONFIG,
+    videoSubtitles: { ...DEFAULT_CONFIG.videoSubtitles, wordLookupActionId },
+  })
+}
+
 describe("SubtitleWordTokens", () => {
   afterEach(() => {
     window.getSelection()?.removeAllRanges()
     subtitlesStore.set(lookUpAtom, null)
     subtitlesStore.set(sourceTrackAtom, [])
-    void subtitlesStore.set(configFieldsAtomMap.selectionToolbar, DEFAULT_CONFIG.selectionToolbar)
+    subtitlesStore.set(configAtom, DEFAULT_CONFIG)
   })
 
   it("looks up the clicked word and highlights only that word", () => {
@@ -65,13 +70,25 @@ describe("SubtitleWordTokens", () => {
     expect(subtitlesStore.get(wordLookupAtom)).toBeNull()
   })
 
-  it("shows plain text when the built-in Dictionary is off", () => {
+  it("runs the action picked in settings", () => {
+    pickAction("default-sentence-analysis")
+    const words = renderLine()
+
+    fireEvent.click(words[2]!)
+
+    expect(subtitlesStore.get(customActionRequestAtom)?.actionId).toBe("default-sentence-analysis")
+  })
+
+  it("shows plain text when the action in effect is off", () => {
     const { selectionToolbar } = DEFAULT_CONFIG
-    void subtitlesStore.set(configFieldsAtomMap.selectionToolbar, {
-      ...selectionToolbar,
-      builtInActions: {
-        ...selectionToolbar.builtInActions,
-        dictionary: { ...selectionToolbar.builtInActions.dictionary, enabled: false },
+    subtitlesStore.set(configAtom, {
+      ...DEFAULT_CONFIG,
+      selectionToolbar: {
+        ...selectionToolbar,
+        builtInActions: {
+          ...selectionToolbar.builtInActions,
+          dictionary: { ...selectionToolbar.builtInActions.dictionary, enabled: false },
+        },
       },
     })
 

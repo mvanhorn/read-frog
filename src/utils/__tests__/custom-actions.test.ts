@@ -7,6 +7,7 @@ import {
   getSelectionToolbarActions,
   replaceSelectionToolbarAction,
   resolveNoteSuggestionAction,
+  resolveWordLookupAction,
 } from "@/utils/custom-actions"
 
 function cloneSelectionToolbar() {
@@ -295,5 +296,32 @@ describe("selection toolbar built-in actions", () => {
     expect(() => resolveNoteSuggestionAction(selectionToolbar)).toThrow(
       'Note suggestion action "deleted-action" is missing from the validated configuration.',
     )
+  })
+})
+
+describe("subtitle word lookup action", () => {
+  function configWith(
+    wordLookupActionId: string,
+    disabled: Array<"dictionary" | "sentenceAnalysis"> = [],
+  ) {
+    const config = structuredClone(DEFAULT_CONFIG)
+    config.videoSubtitles.wordLookupActionId = wordLookupActionId
+    for (const key of disabled) {
+      config.selectionToolbar.builtInActions[key].enabled = false
+    }
+    return config
+  }
+
+  it("runs the picked action while it is on", () => {
+    expect(resolveWordLookupAction(configWith("default-sentence-analysis")).id).toBe(
+      "default-sentence-analysis",
+    )
+  })
+
+  it("falls back to Dictionary when the picked action is off or deleted", () => {
+    expect(
+      resolveWordLookupAction(configWith("default-sentence-analysis", ["sentenceAnalysis"])).id,
+    ).toBe("default-dictionary")
+    expect(resolveWordLookupAction(configWith("deleted-action")).id).toBe("default-dictionary")
   })
 })
