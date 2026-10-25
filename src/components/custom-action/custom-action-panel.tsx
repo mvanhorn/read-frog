@@ -143,6 +143,12 @@ export function CustomActionPanel() {
   const layoutSelection = executionContext?.promptTokens.selection ?? cleanSelection
   const layoutTargetCode = executionContext?.targetCode ?? language.targetCode
   const titleText = (webPageContext?.webTitle ?? getSourceDocumentTitle()) || null
+  // Speech and Notebase saves count the card by where it sits: on video subtitles, or by a
+  // selection, however the selection's card was opened.
+  const cardSurface =
+    request.surface === ANALYTICS_SURFACE.VIDEO_SUBTITLES
+      ? ANALYTICS_SURFACE.VIDEO_SUBTITLES
+      : ANALYTICS_SURFACE.SELECTION_TOOLBAR
 
   return (
     <>
@@ -165,6 +171,7 @@ export function CustomActionPanel() {
           selectionContent={request.selectionText}
           value={result}
           thinking={executionContext ? execution.thinking : null}
+          speakSurface={cardSurface}
         />
         <SelectionToolbarErrorAlert error={error} />
       </SelectionPopover.Body>
@@ -184,6 +191,7 @@ export function CustomActionPanel() {
               failed={!!error}
               isRunning={isRunning}
               result={result}
+              surface={cardSurface}
             />
             <CustomActionToolButton action={action} />
           </>
